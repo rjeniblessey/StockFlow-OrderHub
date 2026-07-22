@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Stockroom — Ledger for Buyers &amp; Sellers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ============= AUTH SCREEN ============= -->
+<section id="auth-screen" class="auth-screen">
+  <div class="auth-wrap">
+    <div class="brand">
+      <span class="brand-mark">§</span>
+      <h1>Stockroom</h1>
+      <p class="brand-sub">One counter.Two ledgers — sellers stock it,buyers clear it.</p>
+    </div>
+
+    <div class="tag-tabs" role="tablist" aria-label="Choose your role">
+      <button class="tag-tab is-active" data-role="customer" role="tab" aria-selected="true">
+        <span class="tag-hole"></span>Buyer
+      </button>
+      <button class="tag-tab" data-role="admin" role="tab" aria-selected="false">
+        <span class="tag-hole"></span>Seller
+      </button>
+    </div>
+
+    <div class="ticket">
+      <div class="ticket-toggle">
+        <button class="mode-btn is-active" data-mode="login">Log in</button>
+        <button class="mode-btn" data-mode="signup">Open an account</button>
+      </div>
+
+      <form id="login-form" class="ticket-form">
+        <label>Username
+          <input type="text" name="username" required autocomplete="username" />
+        </label>
+        <label>Password
+          <input type="password" name="password" required autocomplete="current-password" />
+        </label>
+        <button type="submit" class="stamp-btn">Enter the <span class="role-word">buyer</span> floor</button>
+      </form>
+
+      <form id="signup-form" class="ticket-form hidden">
+        <label>Username
+          <input type="text" name="username" required minlength="3" autocomplete="username" />
+        </label>
+        <label>Email
+          <input type="email" name="email" required autocomplete="email" />
+        </label>
+        <label>Password
+          <input type="password" name="password" required minlength="6" autocomplete="new-password" />
+        </label>
+        <button type="submit" class="stamp-btn">Open my <span class="role-word">buyer</span> account</button>
+      </form>
+
+      <p class="ticket-note" id="auth-note"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============= APP SHELL ============= -->
+<div id="app-shell" class="app-shell hidden">
+  <header class="app-header">
+    <div class="app-brand"><span class="brand-mark">§</span> Stockroom</div>
+    <nav class="app-nav">
+      <span class="who-badge" id="who-badge"></span>
+      <button id="logout-btn" class="ghost-btn">Log out</button>
+    </nav>
+  </header>
+
+  <!-- ADMIN VIEW -->
+  <main id="admin-view" class="view hidden">
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Add to the shelf</h2>
+        <p>New stock goes live the moment it's stamped in.</p>
+      </div>
+      <form id="product-form" class="ledger-form">
+        <label>Product name
+          <input type="text" name="name" required maxlength="60" />
+        </label>
+        <label>Description <span class="optional">optional</span>
+          <input type="text" name="description" maxlength="255" />
+        </label>
+        <div class="row-2">
+          <label>Price (₹)
+            <input type="number" name="price" min="0.01" step="0.01" required />
+          </label>
+          <label>Quantity
+            <input type="number" name="quantity" min="0" step="1" required />
+          </label>
+        </div>
+        <button type="submit" class="stamp-btn">Stamp it into stock</button>
+      </form>
+      <p class="form-note" id="product-note"></p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Current shelf</h2>
+        <p id="admin-product-count"></p>
+      </div>
+      <div id="admin-product-list" class="ledger-list"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>All orders</h2>
+        <p>Every ticket buyers have punched, newest first.</p>
+      </div>
+      <div id="admin-order-list" class="ledger-list"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Delivered</h2>
+        <p>Closed out — the buyer has confirmed receipt.</p>
+      </div>
+      <div id="admin-delivered-list" class="ledger-list"></div>
+    </section>
+  </main>
+
+  <!-- CUSTOMER VIEW -->
+  <main id="customer-view" class="view hidden">
+    <section class="panel">
+      <div class="panel-head">
+        <h2>On the shelf today</h2>
+        <p id="customer-product-count"></p>
+      </div>
+      <div id="customer-product-list" class="shelf-grid"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Your receipts</h2>
+        <p>Everything you've ordered, most recent on top.</p>
+      </div>
+      <div id="customer-order-list" class="ledger-list"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Delivered</h2>
+        <p>Confirmed received — moved out of your active receipts.</p>
+      </div>
+      <div id="customer-delivered-list" class="ledger-list"></div>
+    </section>
+  </main>
+</div>
+
+<!-- Order modal (customer) -->
+<div id="order-modal" class="modal hidden">
+  <div class="modal-card">
+    <h3 id="order-modal-title">Place an order</h3>
+    <p id="order-modal-sub"></p>
+    <label>Quantity
+      <input type="number" id="order-qty" min="1" step="1" value="1" />
+    </label>
+    <p id="order-modal-total" class="modal-total"></p>
+    <div class="modal-actions">
+      <button id="order-cancel" class="ghost-btn">Cancel</button>
+      <button id="order-confirm" class="stamp-btn">Confirm order</button>
+    </div>
+    <p id="order-modal-note" class="form-note"></p>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
