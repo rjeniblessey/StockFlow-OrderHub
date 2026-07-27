@@ -27,13 +27,24 @@ ecommerce-project/
   signing up as a buyer with the same username both succeed, because they're
   different tables/rows scoped by role — but usernames/emails must still be
   unique per role.
-- **Sellers (admin)** can add products and remove them from the shelf. They
-  can see every order placed by every buyer.
-- **Buyers (customer)** can browse the shelf and place orders. They only see
-  their own order history.
-- Every product/order route checks the JWT's role server-side
-  (`get_current_admin` / `get_current_customer` in `auth.py`) — a buyer token
-  can never call the "add product" route, even by hitting the API directly.
+- **This is a multi-seller marketplace** — you can create as many seller
+  accounts as you like, and each one only ever sees and manages *its own*
+  data:
+  - A seller's **"Your shelf"** list and the **add-product form** only ever
+    show/affect products that seller created (`seller_id` on the product).
+  - A seller's **order list** only shows orders placed against *their own*
+    products — never another seller's sales.
+  - A seller can only delete their own products, never another seller's
+    (enforced server-side, not just hidden in the UI).
+  - Two different sellers can list a product with the same name — uniqueness
+    is scoped per seller, not global.
+- The public storefront (what buyers browse) still shows **every seller's**
+  products together, with **"Sold by &lt;username&gt;"** on each card so buyers
+  know who they're ordering from.
+- Every product/order route checks the JWT's role *and* ownership server-side
+  (`get_current_admin`/`get_current_customer` plus a `seller_id`/`customer_id`
+  match in `main.py`) — one seller's token can never touch another seller's
+  products or orders, even by hitting the API directly.
 
 ## Run it
 
@@ -80,10 +91,11 @@ tables inside it, not the database itself.)
 | POST   | `/api/refresh`           | anyone w/ refresh token | rotate access token |
 | POST   | `/api/logout`            | anyone        | revoke a refresh token |
 | GET    | `/api/me`                | logged in     | current user info |
-| GET    | `/api/product`           | public        | list products |
-| POST   | `/api/product`           | admin only    | add a product |
-| DELETE | `/api/product/{id}`      | admin only    | remove a product |
-| GET    | `/api/order`             | logged in     | admin: all orders · customer: own orders |
+| GET    | `/api/product`           | public        | all sellers' products, for the storefront |
+| GET    | `/api/product/mine`      | admin only    | only the logged-in seller's own products |
+| POST   | `/api/product`           | admin only    | add a product to your own shelf |
+| DELETE | `/api/product/{id}`      | admin only, own products | remove one of your own products |
+| GET    | `/api/order`             | logged in     | admin: orders on your products only · customer: your own orders |
 | POST   | `/api/order`             | customer only | place an order (checks & decrements stock) |
 | DELETE | `/api/order/{id}`        | customer only | remove/cancel an order that hasn't shipped yet (restocks it) |
 | PATCH  | `/api/order/{id}/ship`   | admin only    | mark an order as sent |
